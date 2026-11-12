@@ -1,0 +1,114 @@
+﻿===============================================================================
+EVIDENCIA 3 - LOGCAT DE LA VERSION TEMPORAL SIN MANEJO DE ERRORES
+Taller 8 - Programacion para Dispositivos Moviles (U. de Caldas)
+===============================================================================
+Dispositivo : Huawei Y9 (STK-L23B / STK_LX3), Android 9 (EMUI 9.1), serie 85L4C19C11002580
+Paquete     : com.ucaldas.rickmorty (version temporal: Repository sin try/catch)
+Fecha       : 2026-11-05 20:53 (crash reproducido 2 veces: 20:46:51 y 20:53:58)
+
+PROCEDIMIENTO (version temporal instalada):
+  1. App abierta CON internet: la lista cargo con 20 personajes reales.
+  2. svc wifi disable + svc data disable  ->  "Active default network: none"
+  3. Se pulso el boton "Recargar" (nuevo GET sin cerrar la app).
+  4. La app cerro sola (el proceso fue terminado por el Runtime).
+
+COMANDOS USADOS:
+  adb logcat -c
+  adb shell svc wifi disable ; adb shell svc data disable
+  adb shell dumpsys connectivity     -> Active default network: none
+  adb shell input tap 815 165        (boton "Recargar")
+  adb logcat -v time -b crash,main,events   (captura en vivo)
+
+-------------------------------------------------------------------------------
+1) LOGCAT (buffers crash + main + events), capturado en vivo con adb logcat
+-------------------------------------------------------------------------------
+--------- beginning of crash
+11-05 20:53:58.025 D/AndroidRuntime(32495): >>>>>> START com.android.internal.os.RuntimeInit uid 2000 <<<<<<
+11-05 20:53:58.030 I/AndroidRuntime(32495): readDownloadBoosterConfig: 'false'
+
+--------- beginning of crash
+11-05 20:53:58.200 W/Settings(32325): Setting device_provisioned has moved from android.provider.Settings.Secure to android.provider.Settings.Global.
+11-05 20:53:58.202 V/HiTouch_HiTouchSensor(32325): User setup is finished.
+11-05 20:53:58.378 D/HwAppInnerBoostImpl(32325): asyncReportData com.ucaldas.rickmorty,2,2,1,6 interval=184
+11-05 20:53:58.378 I/ViewRootImpl(32325): jank_removeInvalidNode jank list is null
+11-05 20:53:58.403 E/AndroidRuntime(32325): FATAL EXCEPTION: main
+11-05 20:53:58.403 E/AndroidRuntime(32325): Process: com.ucaldas.rickmorty, PID: 32325
+11-05 20:53:58.407 I/am_crash( 1491): [32325,0,com.ucaldas.rickmorty,550026822,android.system.GaiException,android_getaddrinfo failed: EAI_NODATA (No address associated with hostname),Linux.java,-2]
+11-05 20:53:58.430 I/Process (32325): Sending signal. PID: 32325 SIG: 9
+
+[Lectura literal de adb logcat -d -b crash en este mismo crash:]
+E/AndroidRuntime(32325): FATAL EXCEPTION: main
+E/AndroidRuntime(32325): Process: com.ucaldas.rickmorty, PID: 32325
+
+NOTA DE OBSERVACION (sin inventar): en este Huawei/EMUI 9 el buffer de Logcat
+volvio el encabezado FATAL EXCEPTION y el evento del sistema am_crash con la
+causa exacta (GaiException: android_getaddrinfo failed: EAI_NODATA), pero NO
+volvio las lineas de la traza Java de la app (verificado con adb logcat -d -b all,
+con volcado y con captura en vivo; otras apps si muestran sus trazas en el mismo
+buffer). Por eso la traza completa se recupera del registro de crash del sistema
+(mismo origen que usa Android Studio para mostrar el stack), en la parte 2.
+
+-------------------------------------------------------------------------------
+2) TRAZA COMPLETA DE LA EXCEPCION (adb shell dumpsys dropbox --print,
+   entrada "data_app_crash" generada por el mismo crash)
+-------------------------------------------------------------------------------
+Process: com.ucaldas.rickmorty
+PID: 32325
+Flags: 0x20c8be46
+Package: com.ucaldas.rickmorty v1 (1.0)
+SYSVMTYPE: Art
+APPVMTYPE: Art
+Foreground: Yes
+Lifetime: 14s
+Build: HUAWEI/STK-L23B/HWSTK-HF:9/HUAWEISTK-LX3/9.1.0.330C605:user/release-keys
+
+java.net.UnknownHostException: Unable to resolve host "rickandmortyapi.com": No address associated with hostname
+	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:157)
+	at java.net.Inet6AddressImpl.lookupAllHostAddr(Inet6AddressImpl.java:105)
+	at java.net.InetAddress.getAllByName(InetAddress.java:1154)
+	at okhttp3.Dns.lambda$static$0(Dns.java:39)
+	at okhttp3.Dns$$ExternalSyntheticLambda0.lookup(D8$$SyntheticClass:0)
+	at okhttp3.internal.connection.RouteSelector.resetNextInetSocketAddress(RouteSelector.java:171)
+	at okhttp3.internal.connection.RouteSelector.nextProxy(RouteSelector.java:135)
+	at okhttp3.internal.connection.RouteSelector.next(RouteSelector.java:84)
+	at okhttp3.internal.connection.ExchangeFinder.findConnection(ExchangeFinder.java:187)
+	at okhttp3.internal.connection.ExchangeFinder.findHealthyConnection(ExchangeFinder.java:108)
+	at okhttp3.internal.connection.ExchangeFinder.find(ExchangeFinder.java:88)
+	at okhttp3.internal.connection.Transmitter.newExchange(Transmitter.java:169)
+	at okhttp3.internal.connection.ConnectInterceptor.intercept(ConnectInterceptor.java:41)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+	at okhttp3.internal.cache.CacheInterceptor.intercept(CacheInterceptor.java:94)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+	at okhttp3.internal.http.BridgeInterceptor.intercept(BridgeInterceptor.java:93)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+	at okhttp3.internal.http.RetryAndFollowUpInterceptor.intercept(RetryAndFollowUpInterceptor.java:88)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:142)
+	at okhttp3.internal.http.RealInterceptorChain.proceed(RealInterceptorChain.java:117)
+	at okhttp3.RealCall.getResponseWithInterceptorChain(RealCall.java:229)
+	at okhttp3.RealCall$AsyncCall.execute(RealCall.java:172)
+	at okhttp3.internal.NamedRunnable.run(NamedRunnable.java:32)
+	at java.util.concurrent.ThreadPoolExecutor.processTask(ThreadPoolExecutor.java:1187)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1152)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:641)
+	at java.lang.Thread.run(Thread.java:784)
+	Suppressed: kotlinx.coroutines.internal.DiagnosticCoroutineContextException: [StandaloneCoroutine{Cancelling}@c1814d2, Dispatchers.Main.immediate]
+Caused by: android.system.GaiException: android_getaddrinfo failed: EAI_NODATA (No address associated with hostname)
+	at libcore.io.Linux.android_getaddrinfo(Native Method)
+	at libcore.io.BlockGuardOs.android_getaddrinfo(BlockGuardOs.java:172)
+	at java.net.Inet6AddressImpl.lookupHostByName(Inet6AddressImpl.java:137)
+	... 29 more
+
+
+-------------------------------------------------------------------------------
+3) INTERPRETACION (ver ANALISIS.md, secciones 3 y 4)
+-------------------------------------------------------------------------------
+* Excepcion observada: java.net.UnknownHostException (familia IOException):
+  OkHttp no pudo resolver "rickandmortyapi.com" porque no hay red.
+* am_crash confirma la causa de fondo: android.system.GaiException,
+  android_getaddrinfo failed: EAI_NODATA (No address associated with hostname).
+* Sin try/catch en el Repository la excepcion escapo de viewModelScope.launch,
+  la corrutina fallo sin manejador y el Runtime Termino el proceso
+  ("Sending signal. PID: 32325 SIG: 9"): la app se cerro sola (crash).
+* En esta version la app NUNCA llego a pintar UiState.Error.

@@ -1,0 +1,6 @@
+<resources>
+    <!-- El ampersand se escribe &amp; en XML. -->
+    <string name="app_name">Rick &amp; Morty</string>
+    <string name="titulo_app">Personajes de Rick &amp; Morty</string>
+    <string name="subtitulo_app">Universidad de Caldas - Programacion para Dispositivos Moviles</string>
+</resources>
