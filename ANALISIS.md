@@ -227,6 +227,6 @@ nunca se leen datos del ViewModel de la lista.
 - **Checkpoint 3:** predicción escrita antes (§1), excepción observada
   `UnknownHostException` (§3) y Repository corregido con `Result` (§5): la
   petición desconectada produce un fallo manejable. ✅ `evidencias/03_*`
-- **Checkpoint 4:** fila → detalle (§2/§7); red apagada → `Error` sin crash
+- **Checkpoint 4:** fila → detalle (§7); red apagada → `Error` sin crash
   (§3/§5); red restaurada + *Reintentar* → `Success`. ✅ capturas
   `02`, `04` y `05` (antes/después).
